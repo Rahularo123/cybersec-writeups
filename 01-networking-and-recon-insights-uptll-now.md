@@ -1,6 +1,6 @@
 # Networking & Recon: Key Concepts and Gotchas (tcpdump, Nmap, and Tools)
 
-These are my personal notes and key takeaways while learning networking and reconnaissance on TryHackMe. Instead of listing every basic command, this covers practical concepts, "aha!" moments, common misconceptions, and mistakes I ran into.
+These are my personal notes and key takeaways while learning networking and reconnaissance on TryHackMe. Instead of listing every basic command, this covers practical concepts, things i learnt, common misconceptions, and mistakes I ran into.
 
 ---
 
