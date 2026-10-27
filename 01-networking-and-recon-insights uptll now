@@ -1,0 +1,45 @@
+# Networking & Recon: Key Concepts and Gotchas (tcpdump & Nmap)
+
+These are my personal notes and key takeaways while learning networking and reconnaissance on TryHackMe. Instead of listing every basic command, this covers the practical concepts, "aha!" moments, and mistakes I ran into.
+
+---
+
+## 1. Port Numbers are Just Defaults, Not Fixed Rules
+
+In textbooks, you learn that HTTP is port 80 and HTTPS is port 443. But in reality, **any service can run on any port from 1 to 65535**.
+
+- **Why it matters:** In labs and real environments, administrators often run web servers on alternative ports like `8008`, `8080`, or `5000` for development or internal panels.
+- **Key Takeaway:** If ports 80 and 443 are closed, that doesn't mean there is no website. If you see an open port like 8008 running HTTP, you access it in your browser with:
+  `http://<target-ip>:8008`
+- Always look at the service name or run version detection (`nmap -sV`) instead of guessing by port number.
+
+---
+
+## 2. Why Nmap Sends Weird Packets During Ping Scans
+
+When running a scan as root (`sudo nmap -sn <target>`), Nmap doesn't just send a normal `ping` (ICMP Echo). It sends a combination of 4 probes:
+1. **ICMP Echo Request** (Standard ping)
+2. **ICMP Timestamp Request** (Asks for system clock time; helps if standard ping is blocked)
+3. **TCP SYN to Port 443** (HTTPS; standard connection attempt to the most commonly open port)
+4. **TCP ACK to Port 80** (HTTP)
+
+### Why send an ACK out of nowhere to Port 80?
+- Normally, an `ACK` packet only happens in the *middle* of an ongoing connection.
+- Many simple firewalls let incoming ACK packets through because they assume you are replying to something the server requested.
+- When the target server receives an unexpected ACK, it gets confused and replies with a **TCP RST (Reset)** packet.
+- When Nmap gets that `RST`, it knows for sure: **the host is alive behind the firewall.**
+
+---
+
+## 3. What is a Packet Header and BPF?
+
+- **Payload vs Header:** If your network data is a letter, the **payload** is the text inside, and the **header** is the envelope (source address, destination address, ports, and flags).
+- **BPF (Berkeley Packet Filter):** An in-kernel filter engine. Instead of copying every single packet to your terminal, BPF discards unwanted packets inside the kernel immediately, saving system resources.
+- **Reading TCP Flags in tcpdump:**
+  Instead of doing complex math on byte offsets, use built-in aliases:
+  ```bash
+  # Matches packets where ONLY the RST flag is set:
+  tcpdump -r traffic.pcap "tcp[tcpflags] == tcp-rst"
+
+  # Matches packets where the SYN flag is set (even if ACK is also set):
+  tcpdump -r traffic.pcap "tcp[tcpflags] & tcp-syn != 0"
